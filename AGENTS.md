@@ -68,6 +68,10 @@
 - `ADMIN_PASSWORD`：后台密码，默认 `981126`。
 - `SESSION_SECRET`：Cookie HMAC 签名密钥，生产必须改成较长随机值。
 - `COOKIE_SECURE`：是否设置 Secure Cookie，默认 `false`。如果只通过 HTTPS 域名访问，可以设为 `true`。
+- `APP_VERSION`：当前镜像/部署对应的 Git commit SHA。GitHub Actions 构建镜像时会自动注入。
+- `APP_REPOSITORY`：GitHub 仓库名，形如 `owner/repo`。用于后台检查最新版本。
+- `APP_BRANCH`：用于检查更新的分支，默认 `main`。
+- `APP_COMMIT_MESSAGE`、`APP_COMMIT_DATE`：可选的当前版本提交信息和时间；未提供时服务端会尝试从 Git 或 GitHub 读取。
 
 ## 服务端行为
 
@@ -93,6 +97,7 @@
 - `GET /api/admin/content`：后台读取完整内容，需要 `love_admin` Cookie。
 - `PUT /api/admin/content`：后台保存完整内容，需要 `love_admin` Cookie。
 - `POST /api/admin/upload`：后台上传图片或音频，需要 `love_admin` Cookie。
+- `GET /api/admin/version`：后台检查当前版本和 GitHub 最新版本，需要 `love_admin` Cookie。
 
 ## 内容数据结构
 
@@ -125,6 +130,9 @@
 - 使用本地字体 `ZCOOL KuaiLe Local` 作为可爱标题字体。
 - 主要主题变量在 `src/styles.css` 的 `:root` 中。
 - 公开页有花瓣飘落动画、首屏照片卡、纪念日统计、时间线、相册、情书纸、愿望区和音乐条。
+- 樱花花瓣应作为背景层存在，不应压在文字和控件之上；如果需要让花瓣可见，优先调整内容卡片透明度和玻璃模糊，不要提高花瓣层级。
+- 手机端首屏照片卡和计数牌可以有轻微错位，但不能覆盖标题、日期或其他正文文字。
+- 音乐卡片放在页面顶部导航下方，滚动到下方后使用简略悬浮按钮控制播放/暂停，不要让完整音乐卡片长期覆盖页面内容。
 - 响应式断点主要是 `860px` 和 `600px`。
 - 有 `prefers-reduced-motion` 兜底，会减少动画。
 
@@ -146,3 +154,14 @@
 - 改鉴权或 Cookie 时，需要同时考虑公开解锁 Cookie `love_unlock` 和后台 Cookie `love_admin`。
 - 改上传能力时，需要同时修改 multer `fileFilter`、前端 `accept` 和必要的展示逻辑。
 - 改 Docker 配置时，先检查 `docker-compose.yml` 中的环境变量和 `./data:/app/data` 挂载是否仍然正确。
+
+## 修改后的发布流程
+
+- 每次完成代码修改后，先运行 `npm run build`。
+- 如果修改了公开页或后台 UI，需要用手机宽度和桌面宽度各检查一次关键页面，确认没有文字重叠、按钮遮挡或明显排版问题。
+- 提交前执行 `git status -sb` 和 `git diff --stat`，确认只包含本次任务相关文件。
+- 用户要求发布时，将本次修改提交并推送到 GitHub 的 `main` 分支。
+- 推送到 `main` 后，GitHub Actions 的 `Publish Docker image` workflow 会自动构建并推送 GHCR 镜像：
+  - `ghcr.io/<owner>/<repo>:latest`
+  - `ghcr.io/<owner>/<repo>:<commit-sha>`
+- 推送后检查 GitHub Actions 状态，确认 `Publish Docker image` 成功；如果失败，需要查看失败日志并修复后重新推送。

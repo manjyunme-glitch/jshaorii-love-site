@@ -1,4 +1,5 @@
 import {
+  ArrowUp,
   CalendarHeart,
   Camera,
   Gift,
@@ -7,10 +8,12 @@ import {
   LogOut,
   Mail,
   Music2,
+  Pause,
+  Play,
   Sparkles,
   Stars
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "../lib/api.js";
 
 function daysBetween(date) {
@@ -276,7 +279,46 @@ function Wishes({ items, cards }) {
   );
 }
 
-function Music({ site }) {
+function Music({ site, audioRef, onPlayStateChange }) {
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+
+  useEffect(() => {
+    setAutoplayBlocked(false);
+    if (!site.musicUrl || !audioRef.current) return;
+
+    async function playAudio() {
+      if (!audioRef.current) return;
+      await audioRef.current.play();
+      setAutoplayBlocked(false);
+      onPlayStateChange(true);
+    }
+
+    const playAttempt = playAudio();
+    if (playAttempt?.catch) {
+      playAttempt.catch(() => setAutoplayBlocked(true));
+    }
+  }, [site.musicUrl]);
+
+  useEffect(() => {
+    if (!autoplayBlocked) return undefined;
+
+    async function resumeAfterGesture() {
+      try {
+        await audioRef.current?.play();
+        setAutoplayBlocked(false);
+      } catch {
+        setAutoplayBlocked(true);
+      }
+    }
+
+    window.addEventListener("pointerdown", resumeAfterGesture, { once: true });
+    window.addEventListener("keydown", resumeAfterGesture, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", resumeAfterGesture);
+      window.removeEventListener("keydown", resumeAfterGesture);
+    };
+  }, [autoplayBlocked]);
+
   return (
     <section className="music-strip">
       <div>
@@ -287,11 +329,49 @@ function Music({ site }) {
         </div>
       </div>
       {site.musicUrl ? (
-        <audio controls src={site.musicUrl} />
+        <div className="music-player">
+          <audio
+            ref={audioRef}
+            controls
+            src={site.musicUrl}
+            preload="auto"
+            onPlay={() => onPlayStateChange(true)}
+            onPause={() => onPlayStateChange(false)}
+            onEnded={() => onPlayStateChange(false)}
+          />
+          {autoplayBlocked && <span className="empty-note">浏览器拦截了自动播放，点一下播放就好。</span>}
+        </div>
       ) : (
         <span className="empty-note">后台上传一首歌后会出现在这里</span>
       )}
     </section>
+  );
+}
+
+function FloatingActions({ show, hasMusic, isMusicPlaying, onToggleMusic, onBackTop }) {
+  return (
+    <div className={show ? "floating-actions visible" : "floating-actions"} aria-hidden={!show}>
+      {hasMusic && (
+        <button
+          type="button"
+          className="floating-action-button music-toggle"
+          onClick={onToggleMusic}
+          aria-label={isMusicPlaying ? "暂停音乐" : "播放音乐"}
+          tabIndex={show ? 0 : -1}
+        >
+          {isMusicPlaying ? <Pause size={20} /> : <Play size={20} />}
+        </button>
+      )}
+      <button
+        type="button"
+        className="floating-action-button back-top"
+        onClick={onBackTop}
+        aria-label="回到顶部"
+        tabIndex={show ? 0 : -1}
+      >
+        <ArrowUp size={20} />
+      </button>
+    </div>
   );
 }
 
@@ -300,6 +380,9 @@ export default function PublicSite() {
   const [locked, setLocked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [unlockMeta, setUnlockMeta] = useState(defaultUnlockMeta);
+  const [showFloatingActions, setShowFloatingActions] = useState(false);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const audioRef = useRef(null);
 
   async function loadContent() {
     setLoading(true);
@@ -330,6 +413,36 @@ export default function PublicSite() {
   useEffect(() => {
     loadContent();
   }, []);
+
+  useEffect(() => {
+    function updateFloatingActions() {
+      setShowFloatingActions(window.scrollY > 520);
+    }
+
+    updateFloatingActions();
+    window.addEventListener("scroll", updateFloatingActions, { passive: true });
+    return () => window.removeEventListener("scroll", updateFloatingActions);
+  }, []);
+
+  async function toggleMusic() {
+    if (!audioRef.current) return;
+    if (audioRef.current.paused) {
+      try {
+        await audioRef.current.play();
+        setIsMusicPlaying(true);
+      } catch {
+        setIsMusicPlaying(false);
+      }
+      return;
+    }
+
+    audioRef.current.pause();
+    setIsMusicPlaying(false);
+  }
+
+  function backTop() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   const floatingPetals = useMemo(() => petalPattern, []);
 
@@ -373,18 +486,25 @@ export default function PublicSite() {
           </button>
         </div>
       </nav>
+      <Music site={content.site} audioRef={audioRef} onPlayStateChange={setIsMusicPlaying} />
       <Hero content={content} />
       <Stats content={content} />
       <Timeline items={content.timeline} />
       <Gallery items={content.gallery} />
       <Letter letter={content.letter} />
       <Wishes items={content.wishes} cards={content.cards} />
-      <Music site={content.site} />
       <footer className="site-footer">
         <Camera size={18} />
         <span>Made for {content.site.loverName}. Every placeholder can become a real memory.</span>
         <Gift size={18} />
       </footer>
+      <FloatingActions
+        show={showFloatingActions}
+        hasMusic={Boolean(content.site.musicUrl)}
+        isMusicPlaying={isMusicPlaying}
+        onToggleMusic={toggleMusic}
+        onBackTop={backTop}
+      />
     </main>
   );
 }

@@ -7,6 +7,7 @@ import {
   LogOut,
   Music,
   Plus,
+  RefreshCw,
   Save,
   Trash2,
   Upload
@@ -524,6 +525,80 @@ function MusicEditor({ content, setContent }) {
   );
 }
 
+function formatVersionDate(value) {
+  if (!value) return "未知";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const parts = new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${byType.year}-${byType.month}-${byType.day} ${byType.hour}:${byType.minute}:${byType.second} +0800`;
+}
+
+function VersionChecker() {
+  const [checking, setChecking] = useState(false);
+  const [version, setVersion] = useState(null);
+  const [error, setError] = useState("");
+
+  async function checkVersion() {
+    setChecking(true);
+    setError("");
+    try {
+      setVersion(await apiRequest("/api/admin/version"));
+    } catch (checkError) {
+      setError(`检查失败：${checkError.message}`);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  const display = version?.hasUpdate ? version.latest : version?.current;
+  const currentLabel = version?.current?.shortSha || "未知版本";
+
+  return (
+    <section className="admin-section version-section">
+      <div className="version-toolbar">
+        <span className="version-current">v{currentLabel}</span>
+        <button className="button primary small-button" type="button" onClick={checkVersion} disabled={checking}>
+          <RefreshCw size={16} />
+          <span>{checking ? "检查中" : "检查更新"}</span>
+        </button>
+      </div>
+      {error && <p className="form-error">{error}</p>}
+      {version && (
+        <div className={version.hasUpdate ? "version-result update" : "version-result"}>
+          <p>{version.hasUpdate ? "发现新版本，可以重新拉取镜像部署。" : "当前已经是最新版本。"}</p>
+          <dl>
+            <div>
+              <dt>{version.hasUpdate ? "最新版本" : "当前版本"}：</dt>
+              <dd>{display?.sha || display?.shortSha || "未知"}</dd>
+            </div>
+            <div>
+              <dt>提交信息：</dt>
+              <dd>{display?.message || "未知"}</dd>
+            </div>
+            <div>
+              <dt>提交时间：</dt>
+              <dd>{formatVersionDate(display?.date)}</dd>
+            </div>
+          </dl>
+          {version.latest?.unavailableReason && (
+            <span className="empty-note">暂时无法读取 GitHub 最新版本：{version.latest.unavailableReason}</span>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AdminApp() {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -609,6 +684,8 @@ export default function AdminApp() {
       </header>
 
       {message && <p className="admin-message">{message}</p>}
+
+      <VersionChecker />
 
       <section className="admin-section import-export">
         <div>

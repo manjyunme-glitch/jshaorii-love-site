@@ -1,10 +1,12 @@
 import cookieParser from "cookie-parser";
+import { execFile } from "node:child_process";
 import crypto from "node:crypto";
 import express from "express";
 import fs from "node:fs/promises";
 import { existsSync, mkdirSync } from "node:fs";
 import multer from "multer";
 import path from "node:path";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { defaultContent } from "./defaultContent.js";
 
@@ -21,6 +23,13 @@ const SESSION_SECRET =
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "981126";
 const PUBLIC_UNLOCK_CODE = process.env.PUBLIC_UNLOCK_CODE || "991122";
 const COOKIE_SECURE = process.env.COOKIE_SECURE === "true";
+const APP_REPOSITORY = process.env.APP_REPOSITORY || "";
+const APP_BRANCH = process.env.APP_BRANCH || "main";
+const APP_VERSION = process.env.APP_VERSION || "";
+const APP_COMMIT_MESSAGE = process.env.APP_COMMIT_MESSAGE || "";
+const APP_COMMIT_DATE = process.env.APP_COMMIT_DATE || "";
+
+const execFileAsync = promisify(execFile);
 
 const app = express();
 
@@ -156,6 +165,69 @@ function cookieOptions(maxAge) {
   };
 }
 
+async function gitValue(args) {
+  try {
+    const { stdout } = await execFileAsync("git", args, { cwd: rootDir, timeout: 3000 });
+    return stdout.trim();
+  } catch {
+    return "";
+  }
+}
+
+function repositoryFromRemote(remote) {
+  const match = String(remote).match(/github\.com[:/](?<owner>[^/]+)\/(?<repo>[^/.]+)(?:\.git)?$/i);
+  return match?.groups ? `${match.groups.owner}/${match.groups.repo}` : "";
+}
+
+async function currentVersionInfo() {
+  const sha = APP_VERSION || (await gitValue(["rev-parse", "HEAD"]));
+  const remote = await gitValue(["remote", "get-url", "origin"]);
+  const repository = APP_REPOSITORY || repositoryFromRemote(remote);
+  const githubInfo =
+    sha && repository && (!APP_COMMIT_MESSAGE || !APP_COMMIT_DATE)
+      ? await githubCommitInfo(repository, sha)
+      : {};
+  return {
+    sha,
+    shortSha: sha ? sha.slice(0, 7) : "",
+    message: APP_COMMIT_MESSAGE || githubInfo.message || (sha ? await gitValue(["log", "-1", "--pretty=%s"]) : ""),
+    date: APP_COMMIT_DATE || githubInfo.date || (sha ? await gitValue(["log", "-1", "--pretty=%cI"]) : "")
+  };
+}
+
+async function latestVersionInfo() {
+  const remote = await gitValue(["remote", "get-url", "origin"]);
+  const repository = APP_REPOSITORY || repositoryFromRemote(remote);
+  if (!repository) {
+    return { unavailableReason: "repository_not_configured" };
+  }
+
+  const latest = await githubCommitInfo(repository, APP_BRANCH);
+  return { repository, branch: APP_BRANCH, ...latest };
+}
+
+async function githubCommitInfo(repository, ref) {
+  const response = await fetch(`https://api.github.com/repos/${repository}/commits/${ref}`, {
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "User-Agent": "jshaorii-love-site"
+    }
+  });
+
+  if (!response.ok) {
+    return { unavailableReason: `github_${response.status}` };
+  }
+
+  const data = await response.json();
+  const sha = text(data.sha);
+  return {
+    sha,
+    shortSha: sha ? sha.slice(0, 7) : "",
+    message: text(data.commit?.message).split("\n")[0],
+    date: text(data.commit?.committer?.date || data.commit?.author?.date)
+  };
+}
+
 function requireUnlocked(req, res, next) {
   if (verifyToken(req.cookies.love_unlock, "unlocked")) {
     next();
@@ -264,6 +336,16 @@ app.post("/api/admin/logout", (_req, res) => {
 app.get("/api/admin/content", requireAdmin, async (_req, res, next) => {
   try {
     res.json(await readContent());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/version", requireAdmin, async (_req, res, next) => {
+  try {
+    const [current, latest] = await Promise.all([currentVersionInfo(), latestVersionInfo()]);
+    const hasUpdate = Boolean(current.sha && latest.sha && current.sha !== latest.sha);
+    res.json({ current, latest, hasUpdate });
   } catch (error) {
     next(error);
   }
