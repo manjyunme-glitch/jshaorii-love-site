@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.DS_Store
+npm-debug.log
+server.out.log
+server.err.log
+server-*.out.log
+server-*.err.log
+unlock-check*.png
+public-check*.png
+.tmp-edge-profile
+.tmp-chrome-profile
+data/uploads/*
+!data/uploads/.gitkeep

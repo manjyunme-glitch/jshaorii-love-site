@@ -1,0 +1,16 @@
+services:
+  jshaorii-love-site:
+    build: .
+    container_name: jshaorii-love-site
+    restart: unless-stopped
+    ports:
+      - "1314:1314"
+    environment:
+      PORT: "1314"
+      DATA_DIR: "/app/data"
+      PUBLIC_UNLOCK_CODE: "1314"
+      ADMIN_PASSWORD: "change-me"
+      SESSION_SECRET: "change-me-long-random"
+      COOKIE_SECURE: "false"
+    volumes:
+      - ./data:/app/data

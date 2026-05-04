@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1125" viewBox="0 0 900 1125" role="img" aria-label="dreamy sakura placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff7e9"/>
+      <stop offset="0.52" stop-color="#ffe1ee"/>
+      <stop offset="1" stop-color="#dff6ff"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="34%" cy="26%" r="34%">
+      <stop offset="0" stop-color="#fffdf8"/>
+      <stop offset="1" stop-color="#fffdf8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="1125" fill="url(#bg)"/>
+  <circle cx="310" cy="280" r="220" fill="url(#sun)"/>
+  <path d="M0 835 C180 720 278 850 430 744 C610 618 720 752 900 628 L900 1125 L0 1125 Z" fill="#8fd3ff" opacity=".62"/>
+  <path d="M0 900 C210 790 290 925 460 820 C640 710 770 840 900 730 L900 1125 L0 1125 Z" fill="#8ee7c8" opacity=".48"/>
+  <g fill="#ff8fb8" opacity=".75">
+    <ellipse cx="165" cy="190" rx="24" ry="38" transform="rotate(28 165 190)"/>
+    <ellipse cx="710" cy="270" rx="20" ry="32" transform="rotate(-22 710 270)"/>
+    <ellipse cx="615" cy="480" rx="26" ry="38" transform="rotate(36 615 480)"/>
+    <ellipse cx="245" cy="590" rx="18" ry="30" transform="rotate(-40 245 590)"/>
+  </g>
+  <text x="450" y="1015" text-anchor="middle" fill="#7d6b73" font-family="serif" font-size="42">Jshaorii</text>
+</svg>

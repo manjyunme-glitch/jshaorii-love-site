@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="720" viewBox="0 0 900 720" role="img" aria-label="dreamy night light placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#3d3140"/>
+      <stop offset=".58" stop-color="#715a75"/>
+      <stop offset="1" stop-color="#8fd3ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="42%">
+      <stop offset="0" stop-color="#fffaf2" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#fffaf2" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="720" fill="url(#bg)"/>
+  <circle cx="450" cy="306" r="260" fill="url(#glow)"/>
+  <g fill="#fffaf2" opacity=".82">
+    <circle cx="166" cy="148" r="5"/>
+    <circle cx="238" cy="250" r="3"/>
+    <circle cx="710" cy="190" r="4"/>
+    <circle cx="770" cy="328" r="3"/>
+    <circle cx="560" cy="126" r="5"/>
+  </g>
+  <path d="M294 454 C330 362 404 340 450 414 C498 338 574 364 606 454 C560 516 520 548 450 596 C380 548 340 516 294 454 Z" fill="#ff8fb8" opacity=".82"/>
+  <text x="450" y="648" text-anchor="middle" fill="#fffaf2" font-family="serif" font-size="40">soft night</text>
+</svg>

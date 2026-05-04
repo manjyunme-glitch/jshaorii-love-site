@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.vite/
+
+# Runtime data
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Local environment
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local browser/test artifacts
+.tmp-edge-profile/
+.tmp-chrome-profile/
+unlock-check*.png
+public-check*.png
+coverage/
+playwright-report/
+test-results/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
