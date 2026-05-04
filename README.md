@@ -13,9 +13,9 @@ npm start
 访问：
 
 - 网站：`http://localhost:1314`
-- 后台：`http://localhost:1314/admin`
-- 默认入口口令：`1314`
-- 默认后台密码：`change-me`
+- 后台：`http://localhost:1314/981126`
+- 默认入口口令：`991122`
+- 默认后台密码：`981126`
 
 ## NAS / Docker 部署
 
@@ -42,8 +42,8 @@ http://localhost:1314
 | --- | --- | --- |
 | `PORT` | 服务监听端口 | `1314` |
 | `DATA_DIR` | 内容和上传文件目录 | `/app/data` |
-| `PUBLIC_UNLOCK_CODE` | 网站入口口令 | `1314` |
-| `ADMIN_PASSWORD` | 后台密码 | `change-me` |
+| `PUBLIC_UNLOCK_CODE` | 网站入口口令 | `991122` |
+| `ADMIN_PASSWORD` | 后台密码 | `981126` |
 | `SESSION_SECRET` | 登录 Cookie 签名密钥 | `change-me-long-random` |
 | `COOKIE_SECURE` | 是否设置 Secure Cookie | `false` |
 

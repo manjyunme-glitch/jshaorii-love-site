@@ -8,8 +8,8 @@ services:
     environment:
       PORT: "1314"
       DATA_DIR: "/app/data"
-      PUBLIC_UNLOCK_CODE: "1314"
-      ADMIN_PASSWORD: "change-me"
+      PUBLIC_UNLOCK_CODE: "991122"
+      ADMIN_PASSWORD: "981126"
       SESSION_SECRET: "change-me-long-random"
       COOKIE_SECURE: "false"
     volumes:

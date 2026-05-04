@@ -18,8 +18,8 @@ const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const CONTENT_FILE = path.join(DATA_DIR, "content.json");
 const SESSION_SECRET =
   process.env.SESSION_SECRET || "dev-secret-change-this-before-sharing";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "change-me";
-const PUBLIC_UNLOCK_CODE = process.env.PUBLIC_UNLOCK_CODE || "1314";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "981126";
+const PUBLIC_UNLOCK_CODE = process.env.PUBLIC_UNLOCK_CODE || "991122";
 const COOKIE_SECURE = process.env.COOKIE_SECURE === "true";
 
 const app = express();

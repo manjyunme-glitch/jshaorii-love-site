@@ -1,9 +1,9 @@
 export const defaultContent = {
   site: {
-    loverName: "Jshaorii",
+    loverName: "你",
     ownerName: "喜欢你的人",
     anniversary: "2024-05-20",
-    unlockTitle: "给 Jshaorii 的小小宇宙",
+    unlockTitle: "给你的小小宇宙",
     unlockHint: "输入属于我们的数字，就能打开这座只为你亮起的花园。",
     musicTitle: "把想念放进风里",
     musicArtist: "待替换的歌",

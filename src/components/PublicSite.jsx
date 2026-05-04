@@ -41,8 +41,8 @@ function todayCard(cards = []) {
 }
 
 const defaultUnlockMeta = {
-  loverName: "Jshaorii",
-  unlockTitle: "给 Jshaorii 的小小宇宙",
+  loverName: "你",
+  unlockTitle: "给你的小小宇宙",
   unlockHint: "输入属于我们的数字，就能打开这座只为你亮起的花园。"
 };
 
@@ -111,11 +111,11 @@ function UnlockScreen({ meta = defaultUnlockMeta, onUnlocked }) {
           <div className="unlock-row">
             <input
               id="unlock-code"
+              type="password"
               value={code}
               onChange={(event) => setCode(event.target.value)}
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="1314"
             />
             <button type="submit" disabled={loading}>
               <Heart size={18} />

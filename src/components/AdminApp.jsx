@@ -75,7 +75,6 @@ function Login({ onLogin }) {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="change-me"
           />
         </Field>
         {error && <p className="form-error">{error}</p>}
