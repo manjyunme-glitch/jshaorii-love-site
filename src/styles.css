@@ -19,6 +19,8 @@
   --mint: #8ee7c8;
   --mint-soft: #e2fbf2;
   --gold: #f5bd58;
+  --coral: #ff7a7a;
+  --deep: #2f3146;
   --line: rgba(89, 62, 75, 0.13);
   --shadow: 0 18px 50px rgba(141, 91, 118, 0.16);
   --radius: 8px;
@@ -41,6 +43,7 @@
   --page-background:
     radial-gradient(circle at 12% 10%, rgba(255, 143, 184, 0.24), transparent 28rem),
     radial-gradient(circle at 88% 8%, rgba(143, 211, 255, 0.28), transparent 26rem),
+    linear-gradient(135deg, rgba(255, 122, 122, 0.08), transparent 34%),
     linear-gradient(180deg, #fffaf2 0%, #fff8f5 48%, #f0fbff 100%);
 }
 
@@ -101,6 +104,10 @@ button {
 .loading-page {
   color: var(--muted);
   font-weight: 700;
+}
+
+.error-page {
+  padding: 22px;
 }
 
 .unlock-page,
@@ -336,6 +343,19 @@ select:focus {
   transform: translateY(-2px);
 }
 
+.button:active:not(:disabled),
+.icon-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.button:focus-visible,
+.icon-button:focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 4px rgba(255, 143, 184, 0.18),
+    0 14px 28px rgba(255, 143, 184, 0.2);
+}
+
 .button:disabled,
 .icon-button:disabled {
   cursor: not-allowed;
@@ -376,6 +396,18 @@ select:focus {
   position: relative;
   overflow: hidden;
   padding: 22px 22px 48px;
+}
+
+.public-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(61, 49, 64, 0.035) 1px, transparent 1px) 0 0 / 72px 72px,
+    linear-gradient(0deg, rgba(61, 49, 64, 0.025) 1px, transparent 1px) 0 0 / 72px 72px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.52), transparent 72%);
 }
 
 .public-page > :not(.petal-layer):not(.floating-actions) {
@@ -480,6 +512,20 @@ select:focus {
   transform: rotate(3deg);
 }
 
+.polaroid::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 112px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: var(--radius);
+  background: rgba(255, 243, 223, 0.72);
+  box-shadow: 0 8px 18px rgba(141, 91, 118, 0.1);
+  transform: translateX(-50%) rotate(-2deg);
+}
+
 .polaroid img {
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -551,6 +597,23 @@ select:focus {
   background: rgba(255, 255, 255, 0.58);
   box-shadow: 0 12px 34px rgba(141, 91, 118, 0.1);
   backdrop-filter: blur(12px);
+}
+
+.soft-card,
+.gallery-card,
+.letter-paper,
+.daily-card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.soft-card:hover,
+.gallery-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 143, 184, 0.28);
+  box-shadow: 0 18px 42px rgba(141, 91, 118, 0.14);
 }
 
 .stat-card {
@@ -658,6 +721,7 @@ select:focus {
   margin: 8px 0 0;
   color: var(--muted);
   line-height: 1.75;
+  text-wrap: pretty;
 }
 
 .gallery-grid {
@@ -774,6 +838,45 @@ select:focus {
   color: #327c63;
   font-size: 0.82rem;
   font-weight: 900;
+}
+
+.empty-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+}
+
+.empty-panel svg {
+  flex: 0 0 auto;
+  color: #9a4d72;
+}
+
+.empty-panel h1,
+.empty-panel h3 {
+  margin: 0;
+  font-family: var(--font-cute);
+  font-weight: 400;
+  line-height: 1.12;
+}
+
+.empty-panel h1 {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+}
+
+.empty-panel h3 {
+  font-size: 1.22rem;
+}
+
+.empty-panel p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.empty-panel .button {
+  margin-top: 14px;
 }
 
 .music-strip {
@@ -938,6 +1041,33 @@ select:focus {
   font-size: clamp(2rem, 5vw, 3.4rem);
 }
 
+.admin-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.save-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(50, 124, 99, 0.22);
+  border-radius: 999px;
+  background: rgba(226, 251, 242, 0.72);
+  color: #327c63;
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.save-state.dirty {
+  border-color: rgba(178, 59, 86, 0.2);
+  background: rgba(255, 224, 236, 0.7);
+  color: #b23b56;
+}
+
 .admin-header-actions {
   display: flex;
   align-items: center;
@@ -1091,6 +1221,21 @@ select:focus {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: end;
+}
+
+.upload-control {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+
+.upload-error {
+  max-width: 220px;
+  color: #b23b56;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: right;
 }
 
 @keyframes float {
@@ -1258,6 +1403,15 @@ select:focus {
   .unlock-row,
   .inline-actions {
     grid-template-columns: 1fr;
+  }
+
+  .upload-control {
+    justify-items: stretch;
+  }
+
+  .upload-error {
+    max-width: none;
+    text-align: left;
   }
 
   .unlock-row button {

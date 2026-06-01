@@ -14,9 +14,114 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { apiRequest, downloadJson } from "../lib/api.js";
+import { defaultContent } from "../../server/defaultContent.js";
 
 function makeId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function stringValue(value, fallback = "") {
+  return typeof value === "string" ? value : fallback;
+}
+
+function idValue(value, fallback) {
+  return stringValue(value).trim() || fallback;
+}
+
+function objectValue(value, fallback) {
+  return isPlainObject(value) ? value : fallback;
+}
+
+function arrayValue(value, fallback) {
+  return Array.isArray(value) ? value : fallback;
+}
+
+function normalizeContentDraft(input) {
+  if (!isPlainObject(input)) {
+    throw new Error("JSON 顶层必须是对象。");
+  }
+
+  const site = objectValue(input.site, {});
+  const hero = objectValue(input.hero, {});
+  const letter = objectValue(input.letter, {});
+
+  return {
+    site: {
+      ...defaultContent.site,
+      loverName: stringValue(site.loverName, defaultContent.site.loverName),
+      ownerName: stringValue(site.ownerName, defaultContent.site.ownerName),
+      anniversary: stringValue(site.anniversary, defaultContent.site.anniversary),
+      unlockTitle: stringValue(site.unlockTitle, defaultContent.site.unlockTitle),
+      unlockHint: stringValue(site.unlockHint, defaultContent.site.unlockHint),
+      musicTitle: stringValue(site.musicTitle, defaultContent.site.musicTitle),
+      musicArtist: stringValue(site.musicArtist, defaultContent.site.musicArtist),
+      musicUrl: stringValue(site.musicUrl, defaultContent.site.musicUrl)
+    },
+    hero: {
+      ...defaultContent.hero,
+      eyebrow: stringValue(hero.eyebrow, defaultContent.hero.eyebrow),
+      title: stringValue(hero.title, defaultContent.hero.title),
+      subtitle: stringValue(hero.subtitle, defaultContent.hero.subtitle),
+      primaryAction: stringValue(hero.primaryAction, defaultContent.hero.primaryAction),
+      secondaryAction: stringValue(hero.secondaryAction, defaultContent.hero.secondaryAction)
+    },
+    anniversaries: arrayValue(input.anniversaries, defaultContent.anniversaries).map((item, index) => {
+      const draft = objectValue(item, {});
+      return {
+        id: idValue(draft.id, `anniversary-${index + 1}`),
+        title: stringValue(draft.title, "新的纪念日"),
+        date: stringValue(draft.date, defaultContent.site.anniversary),
+        kind: ["count-up", "count-down"].includes(draft.kind) ? draft.kind : "count-up"
+      };
+    }),
+    timeline: arrayValue(input.timeline, defaultContent.timeline).map((item, index) => {
+      const draft = objectValue(item, {});
+      return {
+        id: idValue(draft.id, `timeline-${index + 1}`),
+        date: stringValue(draft.date),
+        title: stringValue(draft.title, "新的回忆"),
+        text: stringValue(draft.text)
+      };
+    }),
+    gallery: arrayValue(input.gallery, defaultContent.gallery).map((item, index) => {
+      const draft = objectValue(item, {});
+      return {
+        id: idValue(draft.id, `gallery-${index + 1}`),
+        title: stringValue(draft.title, "新的照片"),
+        caption: stringValue(draft.caption),
+        date: stringValue(draft.date),
+        url: stringValue(draft.url, "/assets/gallery-placeholder-1.svg")
+      };
+    }),
+    letter: {
+      ...defaultContent.letter,
+      title: stringValue(letter.title, defaultContent.letter.title),
+      greeting: stringValue(letter.greeting, defaultContent.letter.greeting),
+      body: stringValue(letter.body, defaultContent.letter.body),
+      signature: stringValue(letter.signature, defaultContent.letter.signature)
+    },
+    wishes: arrayValue(input.wishes, defaultContent.wishes).map((item, index) => {
+      const draft = objectValue(item, {});
+      return {
+        id: idValue(draft.id, `wish-${index + 1}`),
+        title: stringValue(draft.title, "新的愿望"),
+        text: stringValue(draft.text),
+        status: stringValue(draft.status, "想去")
+      };
+    }),
+    cards: arrayValue(input.cards, defaultContent.cards).map((item, index) => {
+      const draft = objectValue(item, {});
+      return {
+        id: idValue(draft.id, `card-${index + 1}`),
+        title: stringValue(draft.title, "今日小卡片"),
+        text: stringValue(draft.text)
+      };
+    })
+  };
 }
 
 function updateAt(list, index, patch) {
@@ -127,12 +232,14 @@ function RowActions({ index, count, onMove, onRemove }) {
 
 function UploadButton({ accept, onUploaded, icon = "image" }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const inputRef = useRef(null);
 
   async function upload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
     setLoading(true);
+    setError("");
     try {
       const form = new FormData();
       form.append("file", file);
@@ -141,6 +248,8 @@ function UploadButton({ accept, onUploaded, icon = "image" }) {
         body: form
       });
       onUploaded(result.url);
+    } catch (uploadError) {
+      setError(`上传失败：${uploadError.message}`);
     } finally {
       setLoading(false);
       event.target.value = "";
@@ -150,13 +259,14 @@ function UploadButton({ accept, onUploaded, icon = "image" }) {
   const Icon = icon === "music" ? Music : ImagePlus;
 
   return (
-    <>
+    <div className="upload-control">
       <input ref={inputRef} hidden type="file" accept={accept} onChange={upload} />
-      <button type="button" className="button secondary small-button" onClick={() => inputRef.current?.click()}>
+      <button type="button" className="button secondary small-button" onClick={() => inputRef.current?.click()} disabled={loading}>
         <Icon size={16} />
         <span>{loading ? "上传中" : "上传"}</span>
       </button>
-    </>
+      {error && <span className="upload-error">{error}</span>}
+    </div>
   );
 }
 
@@ -604,21 +714,30 @@ export default function AdminApp() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [dirty, setDirty] = useState(false);
   const importRef = useRef(null);
+
+  function updateContent(nextContent) {
+    setDirty(true);
+    setContent(nextContent);
+  }
 
   async function load() {
     setLoading(true);
     try {
       const data = await apiRequest("/api/admin/content");
       setContent(data);
+      setDirty(false);
     } catch {
       setContent(null);
+      setDirty(false);
     } finally {
       setLoading(false);
     }
   }
 
   async function save() {
+    if (!content) return;
     setSaving(true);
     setMessage("");
     try {
@@ -627,6 +746,7 @@ export default function AdminApp() {
         body: JSON.stringify(content)
       });
       setContent(data);
+      setDirty(false);
       setMessage("已保存。");
     } catch (error) {
       setMessage(`保存失败：${error.message}`);
@@ -636,22 +756,44 @@ export default function AdminApp() {
   }
 
   async function logout() {
+    if (dirty && !window.confirm("还有未保存内容，确定退出后台吗？")) {
+      return;
+    }
     await apiRequest("/api/admin/logout", { method: "POST" });
     setContent(null);
+    setDirty(false);
   }
 
   async function importJson(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const raw = await file.text();
-    setContent(JSON.parse(raw));
-    setMessage("JSON 已导入，记得点击保存。");
-    event.target.value = "";
+    try {
+      const raw = await file.text();
+      setContent(normalizeContentDraft(JSON.parse(raw)));
+      setDirty(true);
+      setMessage("JSON 已导入并完成结构兜底，记得点击保存。");
+    } catch (error) {
+      setMessage(`导入失败：${error.message}`);
+    } finally {
+      event.target.value = "";
+    }
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!dirty) return undefined;
+
+    function warnBeforeUnload(event) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [dirty]);
 
   if (loading) {
     return <main className="loading-page">正在进入后台...</main>;
@@ -666,14 +808,19 @@ export default function AdminApp() {
       <header className="admin-header">
         <div>
           <span className="eyebrow">Content Studio</span>
-          <h1>Jshaorii Love Site 后台</h1>
+          <div className="admin-title-row">
+            <h1>Jshaorii Love Site 后台</h1>
+            <span className={dirty ? "save-state dirty" : "save-state"}>
+              {dirty ? "有未保存修改" : "已同步"}
+            </span>
+          </div>
         </div>
         <div className="admin-header-actions">
           <a className="button secondary small-button" href="/">
             <Heart size={16} />
             <span>查看网站</span>
           </a>
-          <button className="button primary small-button" onClick={save} disabled={saving}>
+          <button className="button primary small-button" onClick={save} disabled={saving || !dirty}>
             <Save size={16} />
             <span>{saving ? "保存中" : "保存"}</span>
           </button>
@@ -705,14 +852,14 @@ export default function AdminApp() {
         </div>
       </section>
 
-      <SiteEditor content={content} setContent={setContent} />
-      <AnniversariesEditor content={content} setContent={setContent} />
-      <TimelineEditor content={content} setContent={setContent} />
-      <GalleryEditor content={content} setContent={setContent} />
-      <LetterEditor content={content} setContent={setContent} />
-      <WishesEditor content={content} setContent={setContent} />
-      <CardsEditor content={content} setContent={setContent} />
-      <MusicEditor content={content} setContent={setContent} />
+      <SiteEditor content={content} setContent={updateContent} />
+      <AnniversariesEditor content={content} setContent={updateContent} />
+      <TimelineEditor content={content} setContent={updateContent} />
+      <GalleryEditor content={content} setContent={updateContent} />
+      <LetterEditor content={content} setContent={updateContent} />
+      <WishesEditor content={content} setContent={updateContent} />
+      <CardsEditor content={content} setContent={updateContent} />
+      <MusicEditor content={content} setContent={updateContent} />
     </main>
   );
 }

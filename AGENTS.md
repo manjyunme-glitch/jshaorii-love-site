@@ -2,11 +2,11 @@
 
 ## 本机约定
 
-- 当前项目路径：`E:\jshaorii-love-site`。
-- 当前环境是 Windows + PowerShell。
-- 使用 Docker 时必须显式调用真实 Docker CLI：
+- 项目路径不要写死，以当前 Git 仓库根目录为准；这台 Codex 电脑当前路径是 `E:\Codex\jshaorii-love-site`。
+- 当前环境是 Windows + PowerShell；公司电脑和家里电脑都可能维护本项目，命令说明优先写成可迁移形式。
+- 使用 Docker 前先确认 `Get-Command docker` 指向真实 Docker CLI。如果遇到本机 `C:\Windows\System32\docker` 这类 0 字节影子文件，必须显式调用真实 Docker CLI：
   `& "C:\Program Files\Docker\Docker\resources\bin\docker.exe" ...`
-- 不要使用裸 `docker` 命令。本机的 `C:\Windows\System32\docker` 是 0 字节影子文件，可能会优先截获命令。
+- 在确认当前电脑的 `docker` 命令可用前，不要假设裸 `docker` 一定可靠。
 - 不要主动为 Docker 命令请求 escalated/sandbox 权限；Codex desktop 已经有完整主机访问权限。只有命令明确因为权限失败时再处理权限问题。
 
 ## 项目定位
@@ -119,7 +119,7 @@
 - 公开站点通过 `PublicSite` 首次请求 `/api/public/content` 判断是否已解锁。
 - 未解锁时会退回 `UnlockScreen`，并尝试读取 `/api/public/meta`。
 - 纪念日计算使用 `+08:00` 时区构造日期。
-- `todayCard` 基于 `Date.now() / 86400000` 按天轮换每日卡片。
+- `todayCard` 和纪念日天数都按北京时间自然日轮换/计算。
 - 后台编辑内容只更新前端状态，必须点击“保存”才会写入 `data/content.json`。
 - JSON 导入只是导入到状态，也必须点击“保存”才会落盘。
 - 上传按钮会立即上传文件，并把返回的 `/uploads/...` 地址写到当前编辑项。
@@ -138,10 +138,22 @@
 
 ## Git 和生成物约定
 
+- 两台电脑协作时，每次开始修改前先执行 `git status -sb`，确认没有未处理改动后再执行 `git pull --ff-only`。
+- 如果 `git pull --ff-only` 因为本地提交落后/分叉失败，先停下来检查差异，不要用 `git reset --hard` 或覆盖式 checkout 处理。
 - `node_modules/`、`dist/`、日志、浏览器临时 profile、截图和测试产物不应提交。
 - `data/uploads/*` 不提交，保留 `data/uploads/.gitkeep`。
 - `data/content.json` 当前在仓库中，是项目默认/当前内容数据。
+- `.codex/` 是本地 Codex skill/配置目录，不提交。
 - `.gitattributes` 指定文本自动 LF，常见图片和字体为 binary。
+- 如果公司电脑和家里电脑都改了 `data/content.json`，需要按 JSON 内容手动合并；后台上传文件不会随 Git 同步，需要单独从 NAS 或备份目录迁移。
+
+## 版本记录约定
+
+- 完整版本记录放在 `VERSION_HISTORY.md`。
+- `README.md` 的“最新版本记录”只展示 `VERSION_HISTORY.md` 中最近三条实质性版本记录。
+- 只有项目发生实质变化时才新增版本记录，例如功能、Bug 修复、设计、依赖、安全、部署、数据模型或用户可见行为改变。
+- 仅修改 `README.md`、`AGENTS.md`、协作流程说明、维护规则或文字描述时，不新增版本记录，也不把这类修改写进已有版本记录。
+- 新增版本记录时，把完整条目写入 `VERSION_HISTORY.md` 顶部，并同步维护 README 中最近三条摘要；超过三条时从 README 移除更旧摘要，但保留在 `VERSION_HISTORY.md`。
 
 ## 修改建议
 

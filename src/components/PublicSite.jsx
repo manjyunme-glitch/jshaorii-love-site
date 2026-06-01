@@ -16,31 +16,40 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "../lib/api.js";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const CHINA_TIME_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+function chinaDayNumber(timestamp = Date.now()) {
+  return Math.floor((timestamp + CHINA_TIME_OFFSET_MS) / DAY_MS);
+}
+
+function dateDayNumber(date) {
+  if (!date) return null;
+  const timestamp = new Date(`${date}T00:00:00+08:00`).getTime();
+  if (Number.isNaN(timestamp)) return null;
+  return chinaDayNumber(timestamp);
+}
+
 function daysBetween(date) {
-  if (!date) return 0;
-  const start = new Date(`${date}T00:00:00+08:00`);
-  const now = new Date();
-  const diff = now.getTime() - start.getTime();
-  return Math.max(0, Math.floor(diff / 86400000));
+  const startDay = dateDayNumber(date);
+  if (startDay === null) return 0;
+  return Math.max(0, chinaDayNumber() - startDay);
 }
 
 function daysUntil(date) {
-  if (!date) return 0;
-  const target = new Date(`${date}T00:00:00+08:00`);
-  const now = new Date();
-  const diff = target.getTime() - now.getTime();
-  return Math.max(0, Math.ceil(diff / 86400000));
+  const targetDay = dateDayNumber(date);
+  if (targetDay === null) return 0;
+  return Math.max(0, targetDay - chinaDayNumber());
 }
 
 function prettyDate(date) {
-  if (!date) return "待填写";
+  if (typeof date !== "string" || !date) return "待填写";
   return date.replaceAll("-", ".");
 }
 
 function todayCard(cards = []) {
   if (!cards.length) return null;
-  const day = Math.floor(Date.now() / 86400000);
-  return cards[day % cards.length];
+  return cards[chinaDayNumber() % cards.length];
 }
 
 const defaultUnlockMeta = {
@@ -132,9 +141,42 @@ function UnlockScreen({ meta = defaultUnlockMeta, onUnlocked }) {
   );
 }
 
+function EmptyPanel({ icon: Icon, title, text }) {
+  return (
+    <div className="soft-card empty-panel">
+      <Icon size={22} />
+      <div>
+        <h3>{title}</h3>
+        <p>{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function LoadError({ message, onRetry }) {
+  return (
+    <main className="loading-page error-page">
+      <div className="soft-card empty-panel">
+        <Sparkles size={22} />
+        <div>
+          <h1>小宇宙暂时没有连上</h1>
+          <p>{message}</p>
+          <button type="button" className="button primary small-button" onClick={onRetry}>
+            重新尝试
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function Hero({ content }) {
   const days = daysBetween(content.site.anniversary);
-  const firstGallery = content.gallery[0];
+  const firstGallery = content.gallery[0] || {
+    title: "新的照片",
+    date: content.site.anniversary,
+    url: "/assets/gallery-placeholder-1.svg"
+  };
 
   return (
     <section className="hero-section">
@@ -196,18 +238,22 @@ function Timeline({ items }) {
         <span className="eyebrow">Memory Timeline</span>
         <h2>把每一次心动排成星河</h2>
       </div>
-      <div className="timeline">
-        {items.map((item) => (
-          <article className="timeline-item" key={item.id}>
-            <time>{prettyDate(item.date)}</time>
-            <div className="timeline-dot" />
-            <div className="soft-card">
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </div>
-          </article>
-        ))}
-      </div>
+      {items.length ? (
+        <div className="timeline">
+          {items.map((item) => (
+            <article className="timeline-item" key={item.id}>
+              <time>{prettyDate(item.date)}</time>
+              <div className="timeline-dot" />
+              <div className="soft-card">
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <EmptyPanel icon={CalendarHeart} title="还没有回忆条目" text="去后台添加第一段故事后，这里会按时间线展示。" />
+      )}
     </section>
   );
 }
@@ -219,18 +265,22 @@ function Gallery({ items }) {
         <span className="eyebrow">Photo Room</span>
         <h2>替换成你们真实照片后，这里会更发光</h2>
       </div>
-      <div className="gallery-grid">
-        {items.map((item) => (
-          <article className="gallery-card" key={item.id}>
-            <img src={item.url} alt={item.title} />
-            <div>
-              <span>{prettyDate(item.date)}</span>
-              <h3>{item.title}</h3>
-              <p>{item.caption}</p>
-            </div>
-          </article>
-        ))}
-      </div>
+      {items.length ? (
+        <div className="gallery-grid">
+          {items.map((item) => (
+            <article className="gallery-card" key={item.id}>
+              <img src={item.url || "/assets/gallery-placeholder-1.svg"} alt={item.title} />
+              <div>
+                <span>{prettyDate(item.date)}</span>
+                <h3>{item.title}</h3>
+                <p>{item.caption}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <EmptyPanel icon={Camera} title="相册还空着" text="上传照片或填写图片地址后，公开页会自动生成照片墙。" />
+      )}
     </section>
   );
 }
@@ -263,17 +313,21 @@ function Wishes({ items, cards }) {
           <span>{card?.title || "今日小卡片"}</span>
           <p>{card?.text || "今天也要好好被爱。"}</p>
         </div>
-        <div className="wish-list">
-          {items.map((item) => (
-            <article className="soft-card wish-card" key={item.id}>
-              <div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </div>
-              <span>{item.status}</span>
-            </article>
-          ))}
-        </div>
+        {items.length ? (
+          <div className="wish-list">
+            {items.map((item) => (
+              <article className="soft-card wish-card" key={item.id}>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </div>
+                <span>{item.status}</span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel icon={Gift} title="愿望胶囊还没有内容" text="在后台写下一个想一起完成的小事，它会出现在这里。" />
+        )}
       </div>
     </section>
   );
@@ -379,6 +433,7 @@ export default function PublicSite() {
   const [content, setContent] = useState(null);
   const [locked, setLocked] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [unlockMeta, setUnlockMeta] = useState(defaultUnlockMeta);
   const [showFloatingActions, setShowFloatingActions] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
@@ -386,6 +441,7 @@ export default function PublicSite() {
 
   async function loadContent() {
     setLoading(true);
+    setLoadError("");
     try {
       const data = await apiRequest("/api/public/content");
       setContent(data);
@@ -398,6 +454,10 @@ export default function PublicSite() {
           setUnlockMeta(defaultUnlockMeta);
         }
         setLocked(true);
+      } else {
+        setLoadError(`读取内容失败：${error.message}`);
+        setContent(null);
+        setLocked(false);
       }
     } finally {
       setLoading(false);
@@ -448,6 +508,10 @@ export default function PublicSite() {
 
   if (loading) {
     return <main className="loading-page">正在把小宇宙点亮...</main>;
+  }
+
+  if (loadError) {
+    return <LoadError message={loadError} onRetry={loadContent} />;
   }
 
   if (locked || !content) {

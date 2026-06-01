@@ -12,6 +12,7 @@ data/uploads/*
 # Local environment
 .env
 .env.*
+.codex/
 
 # Logs
 *.log
